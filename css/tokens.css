@@ -473,6 +473,13 @@
   --person-col-projects:   84px;   /* «Projekte», likewise */
   --person-col-peak:       76px;
 
+  /* The Mietverträge grid: canton, office, and three figures about the contracts. */
+  --tenancy-col-canton:    84px;   /* «Kanton» in full, with its sort arrow */
+  --tenancy-col-office:    170px;  /* the floor; the column takes the slack */
+  --tenancy-col-contracts: 86px;   /* «Verträge» in full, with its sort arrow */
+  --tenancy-col-rent:      104px;  /* «12,3 Mio.» and the heading «Miete CHF» */
+  --tenancy-col-due:       76px;
+
   /* Rows and controls */
   --row-height:         38px;
   --row-height-sum:     34px;
@@ -482,7 +489,9 @@
      the code that places them (tokenPx), so the two cannot drift apart. */
   --pop-width:          308px;  /* the pensum editor */
   --pop-assign-width:   336px;  /* the Bearbeitender picker */
+  --pop-tenancy-width:  380px;  /* the tenancy editor, three roles side by side */
   --modal-width:        760px;
+  --modal-width-wide:   1040px; /* a dialog that carries a table */
 
   /* The milestone diamond's hit area. Every diamond sits in a band, so there
      is one size; the printed sheet scales its own down. */

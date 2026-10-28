@@ -397,7 +397,10 @@ const TABS = [
   { id: 'overview', label: 'Planung' },
   { id: 'people', label: 'Personen' },
   { id: 'dashboard', label: 'Dashboard' },
-  { id: 'history', label: 'Verlauf' }
+  { id: 'history', label: 'Verlauf' },
+  /* The second domain: the tenancy agreements, a plan of its own with its own
+     roster. Set apart in the bar, since nothing on it is a building project. */
+  { id: 'tenancy', label: 'Mietverträge', section: true }
 ];
 
 export function appHeader() {
@@ -631,7 +634,7 @@ export function tabBar() {
   return html`<nav class="tabs" aria-label="${t('Bereiche')}">
     ${TABS.map(tab => {
       const current = state.tab === tab.id;
-      return html`<a class="tabs__tab ${current ? 'is-active' : ''}" href="#?tab=${tab.id}"
+      return html`<a class="tabs__tab ${current ? 'is-active' : ''} ${tab.section ? 'tabs__tab--section' : ''}" href="#?tab=${tab.id}"
         ${attr(current, 'aria-current="page"')} data-act="tab" data-val="${tab.id}">${t(tab.label)}</a>`;
     })}
   </nav>`;

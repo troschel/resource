@@ -12,6 +12,10 @@ const DATA_FILES = [
   'milestones', 'changes', 'dashboard', 'i18n', 'print'
 ];
 
+/* The second domain, the tenancy agreements, under data/tenancy/ — see
+   tools/README.md. Its people are a roster of their own, not the project leads. */
+const TENANCY_FILES = ['meta', 'people', 'allocations', 'contracts'];
+
 /** Raw data, populated by load(). */
 export const data = {};
 
@@ -27,7 +31,7 @@ export const data = {};
 export const VOCAB = {
   /* «schedule» is gone from the set but not from the world: readUrl() maps an
      old link to the Planung tab in its Termine view. */
-  tab:     ['overview', 'people', 'dashboard', 'history', 'api', 'export'],
+  tab:     ['overview', 'people', 'dashboard', 'history', 'tenancy', 'api', 'export'],
   lang:    ['de', 'en', 'fr', 'it'],
   scale:   ['year', 'quarter', 'month'],
   unit:    ['pct', 'fte'],
@@ -38,7 +42,11 @@ export const VOCAB = {
   paper:   ['a4', 'a3', 'a2', 'a1', 'a0'],
   zoom:    ['fit', '50', '100', '200', '400'],
   sheet:   ['portrait', 'landscape'],
-  pageSize: ['25', '50', '100']
+  pageSize: ['25', '50', '100'],
+  /* The Mietverträge tab: how its rows are grouped, and which of the three
+     roles its figures show — «all» is the team's pensum, the three summed. */
+  tgroup:  ['team', 'canton', 'office', 'none'],
+  role:    ['all', 'treuhand', 'bewirtschaftung', 'sachbearbeitung']
 };
 
 const DEFAULT_STATE = {
@@ -105,7 +113,22 @@ const DEFAULT_STATE = {
   searchOpen: false,
   collapsedGroups: {},
   cardSort: {},            // dashboard card id -> { by: 'label'|'value', dir: 'asc'|'desc' }
-  toast: null
+  toast: null,
+  /*
+   * The Mietverträge tab. Its own grouping, sort and filters, because none of
+   * the project ones mean anything there; the search, the time window and the
+   * unit are shared. An allocation is edited per role and quarter, so its
+   * overrides are keyed «allocationId:role:q».
+   */
+  tgroup: 'team',
+  role: 'all',
+  teams: [],               // selected team ids
+  cantons: [],             // selected canton ids, e.g. 'BE'
+  offices: [],             // selected federal office ids
+  tSort: 'canton',         // any of T_SORT_IDS, or q0…q39 for one period
+  tDir: 'asc',
+  tOverrides: {},
+  tEditing: null           // { allocationId, q, anchor, draft: { role: value }, reason }
 };
 
 /*
@@ -215,7 +238,7 @@ export function subscribe(fn) {
 let version = 0;
 export function touch() { version++; }
 
-function memo(fn) {
+export function memo(fn) {
   let at = -1;
   let value;
   return () => {
@@ -234,7 +257,7 @@ export function setState(patch, opts = {}) {
 
 /* Every transient layer closed at once — spread into any patch that opens a
    new one, so a dialog cannot open over a live popover. */
-export const OVERLAYS_CLOSED = { menu: null, modal: null, editing: null, picking: null };
+export const OVERLAYS_CLOSED = { menu: null, modal: null, editing: null, picking: null, tEditing: null };
 
 /** Close every transient overlay. Used by Escape and by outside-clicks. */
 export function closeOverlays() {
@@ -264,6 +287,9 @@ const KNOWN = {
   lead: () => new Set([...data.people.map(x => x.id), 'none']),
   portfolio: () => new Set(Object.keys(data.portfoliosById)),
   org: () => new Set(Object.keys(data.organisationsById)),
+  team: () => new Set(data.tenancy.meta.teams.map(x => x.id)),
+  canton: () => new Set(data.tenancy.meta.cantons.map(x => x.id)),
+  office: () => new Set(data.tenancy.meta.offices.map(x => x.id)),
   cols: () => new Set(Object.keys(COLUMN_DEFAULTS.overview)),
   barcols: () => new Set(Object.keys(COLUMN_DEFAULTS.schedule))
 };
@@ -367,6 +393,12 @@ export function readUrl() {
   patch.leads = list('lead');
   patch.portfolios = list('portfolio');
   patch.organisations = list('org');
+  patch.teams = list('team');
+  patch.cantons = list('canton');
+  patch.offices = list('office');
+  const tsort = p.get('tsort') ?? '';
+  patch.tSort = T_SORT_IDS.includes(tsort) || /^q\d+$/.test(tsort) ? tsort : DEFAULT_STATE.tSort;
+  patch.tDir = p.get('tdir') === 'desc' ? 'desc' : DEFAULT_STATE.tDir;
   return patch;
 }
 
@@ -406,6 +438,13 @@ export function writeUrl({ push = false } = {}) {
   if (state.leads.length) p.set('lead', state.leads.join(','));
   if (state.portfolios.length) p.set('portfolio', state.portfolios.join(','));
   if (state.organisations.length) p.set('org', state.organisations.join(','));
+  if (state.tgroup !== DEFAULT_STATE.tgroup) p.set('tgroup', state.tgroup);
+  if (state.role !== DEFAULT_STATE.role) p.set('role', state.role);
+  if (state.teams.length) p.set('team', state.teams.join(','));
+  if (state.cantons.length) p.set('canton', state.cantons.join(','));
+  if (state.offices.length) p.set('office', state.offices.join(','));
+  if (state.tab === 'tenancy' && state.tSort !== DEFAULT_STATE.tSort) p.set('tsort', state.tSort);
+  if (state.tab === 'tenancy' && state.tDir !== DEFAULT_STATE.tDir) p.set('tdir', state.tDir);
   const next = '#?' + p.toString();
   if (next === location.hash) return;
   if (push) history.pushState(null, '', next);
@@ -430,6 +469,15 @@ export async function load() {
     })
   );
   loaded.forEach(([name, json]) => { data[name] = json; });
+
+  data.tenancy = Object.fromEntries(await Promise.all(
+    TENANCY_FILES.map(async name => {
+      const res = await fetch(`data/tenancy/${name}.json`, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`data/tenancy/${name}.json — HTTP ${res.status}`);
+      return [name, await res.json()];
+    })
+  ));
+  indexTenancy(data.tenancy);
 
   // Index lookups used all over the views.
   data.peopleById = Object.fromEntries(data.people.map(p => [p.id, p]));
@@ -456,6 +504,25 @@ export async function load() {
   data.milestonesByProject = groupBy(data.milestones.items, m => m.projectId);
   data.milestoneCatalog = Object.fromEntries(data.milestones.catalog.map(c => [c.code, c]));
   return data;
+}
+
+/* The columns the Mietverträge grid sorts by; how each sorts is in tenancy.js. */
+export const T_SORT_IDS = ['canton', 'office', 'team', 'contracts', 'rent', 'due'];
+
+/*
+ * The tenancy lookups. An allocation is one canton and one office, and its
+ * contracts are the ones with that pair — joined here once, since neither
+ * moves after load.
+ */
+function indexTenancy(tn) {
+  tn.teamsById = Object.fromEntries(tn.meta.teams.map(x => [x.id, x]));
+  tn.cantonsById = Object.fromEntries(tn.meta.cantons.map(x => [x.id, x]));
+  tn.officesById = Object.fromEntries(tn.meta.offices.map(x => [x.id, x]));
+  tn.rolesById = Object.fromEntries(tn.meta.roles.map(x => [x.id, x]));
+  tn.peopleById = Object.fromEntries(tn.people.map(x => [x.id, x]));
+  tn.allocationsById = Object.fromEntries(tn.allocations.map(x => [x.id, x]));
+  tn.allocationsByTeam = groupBy(tn.allocations, a => a.teamId);
+  tn.contractsByAllocation = groupBy(tn.contracts, c => `${c.canton.toLowerCase()}-${c.officeId}`);
 }
 
 /*
@@ -1151,11 +1218,17 @@ export function removeFilter(kind, id) {
   else if (kind === 'lead') setState({ leads: drop(state.leads) });
   else if (kind === 'portfolio') setState({ portfolios: drop(state.portfolios) });
   else if (kind === 'organisation') setState({ organisations: drop(state.organisations) });
+  else if (kind === 'team') setState({ teams: drop(state.teams) });
+  else if (kind === 'canton') setState({ cantons: drop(state.cantons) });
+  else if (kind === 'office') setState({ offices: drop(state.offices) });
   else if (kind === 'search') setState({ search: '' });
 }
 
 export function resetFilters() {
-  setState({ phases: [], leads: [], portfolios: [], organisations: [], search: '' });
+  setState({
+    phases: [], leads: [], portfolios: [], organisations: [], search: '',
+    teams: [], cantons: [], offices: []
+  });
 }
 
 export function toggleIn(key, id) {

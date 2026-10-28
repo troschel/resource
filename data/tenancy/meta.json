@@ -1,0 +1,397 @@
+{
+  "domain": "Mietverträge",
+  "unit": "Immobilienmanagement",
+  "roles": [
+    {
+      "id": "treuhand",
+      "label": "Immobilientreuhänder",
+      "short": "Treuhand",
+      "lead": true
+    },
+    {
+      "id": "bewirtschaftung",
+      "label": "Immobilienbewirtschafter",
+      "short": "Bewirtschaftung",
+      "lead": false
+    },
+    {
+      "id": "sachbearbeitung",
+      "label": "Immobiliensachbearbeiter",
+      "short": "Sachbearbeitung",
+      "lead": false
+    }
+  ],
+  "teams": [
+    {
+      "id": "be",
+      "label": "Team Bern",
+      "cantons": [
+        "BE"
+      ],
+      "members": {
+        "treuhand": "adrianexempel",
+        "bewirtschaftung": "helenexempler",
+        "sachbearbeitung": "olivermodele"
+      }
+    },
+    {
+      "id": "zh",
+      "label": "Team Zürich",
+      "cantons": [
+        "ZH"
+      ],
+      "members": {
+        "treuhand": "monikavorlage",
+        "bewirtschaftung": "pascalvorlagli",
+        "sachbearbeitung": "barbaraesempi"
+      }
+    },
+    {
+      "id": "nwch",
+      "label": "Team Nordwestschweiz",
+      "cantons": [
+        "BS",
+        "BL",
+        "JU",
+        "SH"
+      ],
+      "members": {
+        "treuhand": "ivoprobemann",
+        "bewirtschaftung": "priskaprobst",
+        "sachbearbeitung": "stefanexempel"
+      }
+    },
+    {
+      "id": "mitte",
+      "label": "Team Mittelland",
+      "cantons": [
+        "AG",
+        "SO"
+      ],
+      "members": {
+        "treuhand": "estherexempler",
+        "bewirtschaftung": "cedricmodele",
+        "sachbearbeitung": "jasminvorlage"
+      }
+    },
+    {
+      "id": "zch",
+      "label": "Team Zentralschweiz",
+      "cantons": [
+        "LU",
+        "ZG",
+        "UR",
+        "SZ",
+        "OW",
+        "NW"
+      ],
+      "members": {
+        "treuhand": "romanvorlagli",
+        "bewirtschaftung": "ninaesempi",
+        "sachbearbeitung": "joelprobemann"
+      }
+    },
+    {
+      "id": "ost",
+      "label": "Team Ostschweiz",
+      "cantons": [
+        "SG",
+        "TG",
+        "AR",
+        "AI",
+        "GL"
+      ],
+      "members": {
+        "treuhand": "dorisprobst",
+        "bewirtschaftung": "kurtexempel",
+        "sachbearbeitung": "sabineexempler"
+      }
+    },
+    {
+      "id": "gr",
+      "label": "Team Graubünden",
+      "cantons": [
+        "GR"
+      ],
+      "members": {
+        "treuhand": "lukasmodele",
+        "bewirtschaftung": "melanievorlage",
+        "sachbearbeitung": null
+      }
+    },
+    {
+      "id": "ti",
+      "label": "Team Tessin",
+      "cantons": [
+        "TI"
+      ],
+      "members": {
+        "treuhand": "leaesempi",
+        "bewirtschaftung": "thomasprobemann",
+        "sachbearbeitung": "regulaprobst"
+      }
+    },
+    {
+      "id": "vd",
+      "label": "Team Waadt",
+      "cantons": [
+        "VD"
+      ],
+      "members": {
+        "treuhand": "fabriceexempel",
+        "bewirtschaftung": "franziskaexempler",
+        "sachbearbeitung": "marcomodele"
+      }
+    },
+    {
+      "id": "ge",
+      "label": "Team Genf",
+      "cantons": [
+        "GE"
+      ],
+      "members": {
+        "treuhand": "ursulavorlage",
+        "bewirtschaftung": "matthiasvorlagli",
+        "sachbearbeitung": "sandrineesempi"
+      }
+    },
+    {
+      "id": "frne",
+      "label": "Team Freiburg–Neuenburg",
+      "cantons": [
+        "FR",
+        "NE"
+      ],
+      "members": {
+        "treuhand": "gianprobemann",
+        "bewirtschaftung": "nadjaprobst",
+        "sachbearbeitung": "valentinexempel"
+      }
+    },
+    {
+      "id": "vs",
+      "label": "Team Wallis",
+      "cantons": [
+        "VS"
+      ],
+      "members": {
+        "treuhand": "claudiaexempler",
+        "bewirtschaftung": "adrianmodele",
+        "sachbearbeitung": "helenvorlage"
+      }
+    }
+  ],
+  "cantons": [
+    {
+      "id": "ZH",
+      "label": "Zürich"
+    },
+    {
+      "id": "BE",
+      "label": "Bern"
+    },
+    {
+      "id": "LU",
+      "label": "Luzern"
+    },
+    {
+      "id": "UR",
+      "label": "Uri"
+    },
+    {
+      "id": "SZ",
+      "label": "Schwyz"
+    },
+    {
+      "id": "OW",
+      "label": "Obwalden"
+    },
+    {
+      "id": "NW",
+      "label": "Nidwalden"
+    },
+    {
+      "id": "GL",
+      "label": "Glarus"
+    },
+    {
+      "id": "ZG",
+      "label": "Zug"
+    },
+    {
+      "id": "FR",
+      "label": "Freiburg"
+    },
+    {
+      "id": "SO",
+      "label": "Solothurn"
+    },
+    {
+      "id": "BS",
+      "label": "Basel-Stadt"
+    },
+    {
+      "id": "BL",
+      "label": "Basel-Landschaft"
+    },
+    {
+      "id": "SH",
+      "label": "Schaffhausen"
+    },
+    {
+      "id": "AR",
+      "label": "Appenzell Ausserrhoden"
+    },
+    {
+      "id": "AI",
+      "label": "Appenzell Innerrhoden"
+    },
+    {
+      "id": "SG",
+      "label": "St. Gallen"
+    },
+    {
+      "id": "GR",
+      "label": "Graubünden"
+    },
+    {
+      "id": "AG",
+      "label": "Aargau"
+    },
+    {
+      "id": "TG",
+      "label": "Thurgau"
+    },
+    {
+      "id": "TI",
+      "label": "Tessin"
+    },
+    {
+      "id": "VD",
+      "label": "Waadt"
+    },
+    {
+      "id": "VS",
+      "label": "Wallis"
+    },
+    {
+      "id": "NE",
+      "label": "Neuenburg"
+    },
+    {
+      "id": "GE",
+      "label": "Genf"
+    },
+    {
+      "id": "JU",
+      "label": "Jura"
+    }
+  ],
+  "offices": [
+    {
+      "id": "bakom",
+      "short": "BAKOM",
+      "label": "Bundesamt für Kommunikation",
+      "department": "UVEK"
+    },
+    {
+      "id": "baspo",
+      "short": "BASPO",
+      "label": "Bundesamt für Sport",
+      "department": "VBS"
+    },
+    {
+      "id": "meteo",
+      "short": "MeteoSchweiz",
+      "label": "Bundesamt für Meteorologie und Klimatologie",
+      "department": "EDI"
+    },
+    {
+      "id": "bag",
+      "short": "BAG",
+      "label": "Bundesamt für Gesundheit",
+      "department": "EDI"
+    },
+    {
+      "id": "bfs",
+      "short": "BFS",
+      "label": "Bundesamt für Statistik",
+      "department": "EDI"
+    },
+    {
+      "id": "bak",
+      "short": "BAK",
+      "label": "Bundesamt für Kultur",
+      "department": "EDI"
+    },
+    {
+      "id": "bafu",
+      "short": "BAFU",
+      "label": "Bundesamt für Umwelt",
+      "department": "UVEK"
+    },
+    {
+      "id": "astra",
+      "short": "ASTRA",
+      "label": "Bundesamt für Strassen",
+      "department": "UVEK"
+    },
+    {
+      "id": "bfe",
+      "short": "BFE",
+      "label": "Bundesamt für Energie",
+      "department": "UVEK"
+    },
+    {
+      "id": "seco",
+      "short": "SECO",
+      "label": "Staatssekretariat für Wirtschaft",
+      "department": "WBF"
+    },
+    {
+      "id": "blw",
+      "short": "BLW",
+      "label": "Bundesamt für Landwirtschaft",
+      "department": "WBF"
+    },
+    {
+      "id": "estv",
+      "short": "ESTV",
+      "label": "Eidgenössische Steuerverwaltung",
+      "department": "EFD"
+    },
+    {
+      "id": "bazg",
+      "short": "BAZG",
+      "label": "Bundesamt für Zoll und Grenzsicherheit",
+      "department": "EFD"
+    },
+    {
+      "id": "bit",
+      "short": "BIT",
+      "label": "Bundesamt für Informatik und Telekommunikation",
+      "department": "EFD"
+    },
+    {
+      "id": "sem",
+      "short": "SEM",
+      "label": "Staatssekretariat für Migration",
+      "department": "EJPD"
+    },
+    {
+      "id": "fedpol",
+      "short": "fedpol",
+      "label": "Bundesamt für Polizei",
+      "department": "EJPD"
+    },
+    {
+      "id": "armasuisse",
+      "short": "armasuisse",
+      "label": "Bundesamt für Rüstung armasuisse",
+      "department": "VBS"
+    }
+  ],
+  "settings": {
+    "renewalSpan": 3
+  }
+}
