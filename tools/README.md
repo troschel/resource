@@ -162,3 +162,55 @@ The app reads the files directly, so a reload is enough. Worth checking:
 - `docs/` for the review that covers whatever you changed
 - the harness, if you have it: the flow suite asserts the horizon rather than a
   fixed number of quarters, so it survives a wider window
+
+## `generate-tenancy.js`
+
+Builds the mock portfolio of tenancy agreements in `data/tenancy/` — the second
+planning domain next to the building projects. Node, no dependencies:
+
+```
+node tools/generate-tenancy.js
+```
+
+It reads only `data/meta.json`, for the quarter list and `today`, so both
+domains plan against the same forty quarters. Seeded like the portfolio
+generator, so a run is repeatable.
+
+### The planning unit
+
+The work is organised by canton: a team of three — Immobilientreuhänder (the
+lead), Immobilienbewirtschafter, Immobiliensachbearbeiter — takes every contract
+in its cantons. With some 2500 contracts nobody books a pensum per contract, so
+the plan sits one level up: **one allocation per canton and federal office**,
+with a per-quarter pensum for each of the three roles. Since a canton has one
+team, the role names the person. The contracts stay underneath as the evidence:
+what is let, at what rent, and when it runs out.
+
+### What it writes
+
+| File | Content |
+| --- | --- |
+| `meta.json` | `roles[]` (`treuhand`, `bewirtschaftung`, `sachbearbeitung`); `teams[]` — `{ id, label, cantons[], members }`, `members` maps role to person id, `null` for a vacancy; `cantons[]`; `offices[]` — `{ id, short, label, department }` |
+| `contracts.json` | `{ id, number, buildingId, canton, officeId, title, rent, rentLabel, start, end, endLabel, term }` — `title` is the Vertragsbezeichnung, `rent` the yearly rent in CHF, `end` the Enddatum (ISO, `null` for unbefristet), `term` the roll-over term in years |
+| `buildings.json` | `{ id, label, canton, officeId }`; a building is let to one office |
+| `allocations.json` | `{ id, canton, officeId, teamId, contracts, rent, rentLabel, renewals, demand }` — `id` is `canton-office` (`be-bakom`), `contracts`/`rent`/`renewals` summarise the contracts underneath, `demand` is a per-quarter array per role in % of a full position |
+| `people.json` | `{ id, name, initials, shortName, role, roleLabel, teamId, employment, baseLoad[] }` — `baseLoad` is the sum of the person's allocations |
+
+### The shape of the work
+
+An allocation's demand is what its contracts suggest — the starting value a
+planner would overwrite. A contract's effort per role grows with the rent on a
+log scale (`EFFORT`). On top comes the renewal: the `RENEWAL_SPAN` quarters up
+to and including the quarter of the Enddatum carry extra effort (`RENEWAL`).
+A fixed-term contract rolls over for the same term, so a five-year lease peaks
+twice in the window; an unbefristet one never does. Leases end on a quarter's
+last day.
+
+The relative units are scaled so the average team member carries `MEAN_LOAD`,
+and each person's employment is fitted to their load (50–100 %, in steps of
+ten). Cantons are grouped into teams in `TEAMS` so the portfolios are
+comparable; where a team's load is more than three full positions can carry,
+the overload stays visible. Team Graubünden has no Sachbearbeiter.
+
+The effort table, the renewal peak and the team grouping are assumptions of the
+mock, not figures from the office.

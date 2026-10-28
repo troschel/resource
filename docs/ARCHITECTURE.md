@@ -32,9 +32,11 @@ that way is the point.
 | 0 | `icons.js` | Lucide sprites |
 | 0 | `pdf.js` | Writes a PDF by walking rendered sheets |
 | 1 | `columns.js` | The column registry |
+| 1 | `tenancy.js` | Derived figures of the Mietverträge tab: pensum with edits, people's load, end dates, filtering and grouping |
 | 2 | `ui.js` | The `html` template layer, and every shared control |
 | 3 | `views-schedule.js` | The bar plan's row: bars and gates on a time track, and the band the grid draws under its figures |
 | 3 | `views-overview.js`, `views-analysis.js`, `views-modals.js`, `export.js` | One view each; the Planung grid imports the band from the row module |
+| 3 | `views-tenancy.js` | The Mietverträge tab, its editor and its two dialogs (contracts, person) |
 | 4 | `views-docs.js` | The printed sheets; reuses the Gantt row |
 | 5 | `app.js` | Boot, render loop, event dispatch |
 
@@ -118,6 +120,28 @@ line with the page actions; there is no breadcrumb bar and no page title.
 The measurements are in the comments of the last three sections of
 `main.css`, and in `docs/PLANUNG-MERGE.md`.
 
+## The Mietverträge tab
+
+A second planning domain beside the building projects, with its own data
+(`data/tenancy/`, see `tools/README.md`) and its own roster. A team of three —
+Treuhand, Bewirtschaftung, Sachbearbeitung — carries every contract in its
+cantons, and the plan is one **allocation** per canton and federal office: a
+pensum per role and quarter. The roughly 2500 contracts are not planned one by
+one; they are listed behind each row, with the Enddatum that drives the peaks.
+
+- The grid is grouped by team by default; under each team its three people
+  as utilisation of their contract, a vacancy as the load nobody carries.
+- The role switch shows one role's pensum or the team's (`all`, the sum).
+- A cell opens an editor for that quarter with all three roles side by side;
+  a raise that takes someone over 100 % needs a reason, as on Planung. Edits
+  are `state.tOverrides`, keyed `allocationId:role:q`, and are logged to the
+  Verlauf without a project.
+- A dot marks a period in which a contract of that row ends; «Ablauf» counts
+  the contracts ending within twelve months.
+
+The search, the time window and the unit are shared with the project tabs; the
+grouping, filters and sort are the tab's own. It has no export or print yet.
+
 ## Events
 
 One delegated listener. Controls carry `data-act` (and usually `data-val`), and
@@ -137,7 +161,7 @@ the reader's own.
 
 | Key | Carries | Values |
 | --- | --- | --- |
-| `tab` | the page | `overview`, `people`, `dashboard`, `history`, `api`, `export` (`dashboard` with `bi=people` in old links still opens Personen) |
+| `tab` | the page | `overview`, `people`, `dashboard`, `history`, `tenancy`, `api`, `export` (`dashboard` with `bi=people` in old links still opens Personen) |
 | `view` | the Ansicht preset | `pensum`, `pensum-termine`, `termine`, `custom` (`both` in old links still opens the combined view) |
 | `layers` | the layers of Benutzerdefiniert, only with `view=custom` | any of `values,phases,gates,today` |
 | `colour` | the heat ramp | `none` when off |
@@ -149,6 +173,9 @@ the reader's own.
 | `q`, `phase`, `lead`, `portfolio`, `org` | the search and the filters | ids, comma-separated |
 | `psort`, `pdir`, `csort` | the person table's sort, the dashboard cards' order | a column or `q3`; `asc`/`desc`; `card:by:dir` per card |
 | `page`, `pageSize` | the change log | numbers |
+| `tgroup`, `role` | the Mietverträge grouping and the role its figures show | `team`/`canton`/`office`/`none`; `all`/`treuhand`/`bewirtschaftung`/`sachbearbeitung` |
+| `team`, `canton`, `office` | the Mietverträge filters | ids, comma-separated |
+| `tsort`, `tdir` | the Mietverträge sort | a column or `q3`; `asc`/`desc` |
 | `sheet`, `paper`, `zoom` | the print preview | `portrait`/`landscape`, `a4`…`a0`, `fit`/`50`… |
 
 `readUrl` returns a value for **every** URL-carried key — the hash's, or the

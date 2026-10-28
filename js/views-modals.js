@@ -14,6 +14,7 @@ import {
 } from './store.js';
 
 import { html, icons, attr, personOption, personSearch } from './ui.js';
+import { contractsModal, tPersonModal } from './views-tenancy.js';
 
 /**
  * One dialog head for all four: the same close button was written out four
@@ -208,8 +209,13 @@ const MODALS = {
   project: projectModal,
   person: personModal,
   share: shareModal,
-  rebook: rebookModal
+  rebook: rebookModal,
+  contracts: contractsModal,   // the Mietverträge behind one canton and office
+  tperson: tPersonModal        // a person of a tenancy team
 };
+
+/* The dialogs that carry a table and need the width for it. */
+const WIDE = new Set(['contracts']);
 
 export function renderModal() {
   if (!state.modal) return '';
@@ -220,7 +226,7 @@ export function renderModal() {
      with a label pointing nowhere is not a fallback. */
   if (!body) return '';
   return html`<div class="scrim" data-act="close-modal">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" data-stop>${body}</div>
+    <div class="modal ${WIDE.has(state.modal.type) ? 'modal--wide' : ''}" role="dialog" aria-modal="true" aria-labelledby="modal-title" data-stop>${body}</div>
   </div>`;
 }
 

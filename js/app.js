@@ -21,6 +21,8 @@ import { renderOverview, editPopover, assignPicker } from './views-overview.js';
 import { renderModal } from './views-modals.js';
 import { renderPeople, renderDashboard, renderHistory } from './views-analysis.js';
 import { renderApi, renderExport, mountSwagger } from './views-docs.js';
+import { renderTenancy, tenancyPopover } from './views-tenancy.js';
+import { roleValue, tDefaultDir, ROLE_IDS, cantonLabel, officeOf } from './tenancy.js';
 import { exportCsv, exportXlsx } from './export.js';
 
 const root = document.getElementById('app');
@@ -34,6 +36,7 @@ const VIEWS = {
   people: renderPeople,
   dashboard: renderDashboard,
   history: renderHistory,
+  tenancy: renderTenancy,
   api: renderApi,
   export: renderExport
 };
@@ -97,6 +100,14 @@ function refreshAnchors() {
       state.picking.anchor = { left: r.left, top: r.top, bottom: r.bottom };
     }
   }
+  if (state.tEditing) {
+    const { allocationId, q } = state.tEditing;
+    const cell = root.querySelector(`[data-fk="${CSS.escape(`tcell:${allocationId}:${q}`)}"]`);
+    if (cell) {
+      const r = cell.getBoundingClientRect();
+      state.tEditing.anchor = { top: r.top, bottom: r.bottom, right: r.right };
+    }
+  }
 }
 
 function render() {
@@ -132,6 +143,7 @@ function render() {
     ${appFooter()}
     ${state.editing ? editPopover() : ''}
     ${state.picking ? assignPicker() : ''}
+    ${state.tEditing ? tenancyPopover() : ''}
     ${renderModal()}
     ${toast()}
   `);
@@ -399,7 +411,7 @@ const actions = {
   home: () => setState({
     tab: 'overview', ...OVERLAYS_CLOSED,
     phases: [], leads: [], portfolios: [], organisations: [], search: '',
-    searchOpen: false
+    teams: [], cantons: [], offices: [], searchOpen: false
   }),
   lang: (val) => setState({ lang: val, menu: null }),
 
@@ -463,6 +475,60 @@ const actions = {
   'toggle-portfolio': (val) => toggleIn('portfolios', val),
   'toggle-organisation': (val) => toggleIn('organisations', val),
 
+  /* -- Mietverträge ------------------------------------------------------- */
+
+  tgroup: (val) => setState({ tgroup: val, menu: null }),
+  role: (val) => setState({ role: val }),
+  'toggle-team': (val) => toggleIn('teams', val),
+  'toggle-canton': (val) => toggleIn('cantons', val),
+  'toggle-office': (val) => toggleIn('offices', val),
+  'filter-tteam': (val) => setState({ tab: 'tenancy', ...OVERLAYS_CLOSED, teams: [val] }),
+  'sort-tenancy': (val) => setState(s => (s.tSort === val
+    ? { tDir: s.tDir === 'asc' ? 'desc' : 'asc' }
+    : { tSort: val, tDir: tDefaultDir(val) })),
+  'open-contracts': (val) => setState({ ...OVERLAYS_CLOSED, modal: { type: 'contracts', allocationId: val } }),
+  'open-tperson': (val) => setState({ ...OVERLAYS_CLOSED, modal: { type: 'tperson', personId: val } }),
+
+  /* A cell opens the editor for its quarter, with all three roles in it: the
+     team splits the work between them, so they are set side by side. */
+  tcell: (val, el) => {
+    const q = Number(el.dataset.q);
+    const a = data.tenancy.allocationsById[val];
+    const r = el.getBoundingClientRect();
+    setState({
+      ...OVERLAYS_CLOSED,
+      tEditing: {
+        allocationId: val, q, anchor: { top: r.top, bottom: r.bottom, right: r.right }, reason: '',
+        draft: Object.fromEntries(ROLE_IDS.map(role => [role, roleValue(a, role, q)]))
+      }
+    });
+  },
+  tdraft: (val) => {
+    const [role, step] = val.split(':');
+    setState(s => ({ tEditing: { ...s.tEditing,
+      draft: { ...s.tEditing.draft, [role]: Math.max(0, Math.min(100, s.tEditing.draft[role] + Number(step))) } } }));
+  },
+  tcancel: () => setState({ tEditing: null }),
+  tapply: () => {
+    const { allocationId, q, draft, reason } = state.tEditing;
+    const a = data.tenancy.allocationsById[allocationId];
+    const overrides = { ...state.tOverrides };
+    const changed = [];
+    for (const role of ROLE_IDS) {
+      const before = roleValue(a, role, q);
+      const k = `${a.id}:${role}:${q}`;
+      if (draft[role] === a.demand[role][q]) delete overrides[k];
+      else overrides[k] = draft[role];
+      if (draft[role] !== before) changed.push(`${t(data.tenancy.rolesById[role].short)} ${before} % → ${draft[role]} %`);
+    }
+    if (!changed.length) return setState({ tEditing: null });
+    const label = `${officeOf(a.officeId).short} ${cantonLabel(a.canton)}`;
+    logSetting('Pensum', `${data.quarters[q].label}: ${changed.join(', ')}${reason.trim() ? ` · ${reason.trim()}` : ''}`,
+      changed.join(', '), `${t('Mietverträge')} · ${label}`);
+    setState({ tOverrides: overrides });
+    flash(`${t('Pensum übernommen')} — ${label}, ${data.quarters[q].label}`, { tEditing: null });
+  },
+
   /*
    * «Alle» needs the full id list for the menu it sits in. A lookup rather than
    * a chain ending in a default: the chain quietly handed the portfolio ids to
@@ -474,7 +540,10 @@ const actions = {
       phases: () => data.phases.eppm.map(e => e.id),
       leads: () => [...data.people.map(p => p.id), 'none'],
       portfolios: () => data.meta.portfolios.map(p => p.id),
-      organisations: () => data.meta.organisations.map(o => o.id)
+      organisations: () => data.meta.organisations.map(o => o.id),
+      teams: () => data.tenancy.meta.teams.map(x => x.id),
+      cantons: () => data.tenancy.meta.cantons.map(x => x.id),
+      offices: () => data.tenancy.meta.offices.map(x => x.id)
     }[kind];
     if (!every) return;
     setState({ [kind]: val === 'all' ? every() : [] });
@@ -733,7 +802,7 @@ const actions = {
    * session rather than waiting behind a login for somebody else — and the
    * signed-out screen says that they did.
    */
-  signout: () => setState({ signedIn: false, ...OVERLAYS_CLOSED, reason: '', overrides: {}, settingsDraft: null }),
+  signout: () => setState({ signedIn: false, ...OVERLAYS_CLOSED, reason: '', overrides: {}, tOverrides: {}, settingsDraft: null }),
 
   signin: () => setState({ signedIn: true }),
   /* The print layout prints what is on screen: the bar plan when the reader is
@@ -832,7 +901,7 @@ root.addEventListener('click', (event) => {
   event.preventDefault();
   // Remember the opener, but only while nothing is open — so the key belongs to
   // whatever is about to open, not to a click inside an open dialog.
-  if (!state.modal && !state.editing && !state.picking) modalReturn = focusKey(el);
+  if (!state.modal && !state.editing && !state.picking && !state.tEditing) modalReturn = focusKey(el);
   fn(el.dataset.val, el);
 });
 
@@ -876,6 +945,14 @@ root.addEventListener('input', (event) => {
     setState(s => ({ picking: { ...s.picking, search: el.value } }));
   } else if (act === 'reason') {
     setState({ reason: el.value });
+  } else if (act === 'treason') {
+    setState(s => ({ tEditing: { ...s.tEditing, reason: el.value } }));
+  } else if (act === 'tdraft-input') {
+    const n = Number(el.value);
+    if (Number.isFinite(n)) {
+      setState(s => ({ tEditing: { ...s.tEditing,
+        draft: { ...s.tEditing.draft, [el.dataset.val]: Math.max(0, Math.min(100, Math.round(n))) } } }));
+    }
   } else if (act === 'draft-input') {
     const n = Number(el.value);
     if (Number.isFinite(n)) setState({ draft: Math.max(0, Math.min(200, n)) });
@@ -949,7 +1026,7 @@ document.addEventListener('keydown', (event) => {
    * an aria-modal dialog onto the brand link and the header search, behind the
    * scrim, with no way to tell you had left.
    */
-  const modal = (state.modal || state.editing || state.picking)
+  const modal = (state.modal || state.editing || state.picking || state.tEditing)
     && (root.querySelector('.modal') ?? root.querySelector('.pop'));
   if (modal && event.key === 'Tab') {
     const items = trapFocusables(modal);
@@ -1002,6 +1079,11 @@ document.addEventListener('keydown', (event) => {
       && !event.target.matches('textarea, button')) {
     const apply = root.querySelector('.pop [data-act="apply"]');
     if (apply && !apply.disabled) { event.preventDefault(); actions.apply(); }
+  }
+  if (event.key === 'Enter' && state.tEditing && root.contains(event.target)
+      && !event.target.matches('textarea, button')) {
+    const apply = root.querySelector('.pop [data-act="tapply"]');
+    if (apply && !apply.disabled) { event.preventDefault(); actions.tapply(); }
   }
 });
 
@@ -1091,6 +1173,13 @@ document.addEventListener('scroll', (event) => {
   if (event.target instanceof Element && event.target.closest('.pop')) return;
   if (state.picking) {
     if (!state.picking.search) setState({ picking: null });
+    return;
+  }
+  if (state.tEditing) {
+    const { allocationId, q, draft, reason } = state.tEditing;
+    const a = data.tenancy.allocationsById[allocationId];
+    const started = reason.trim() !== '' || ROLE_IDS.some(r => draft[r] !== roleValue(a, r, q));
+    if (!started) setState({ tEditing: null });
     return;
   }
   if (!state.editing) return;
